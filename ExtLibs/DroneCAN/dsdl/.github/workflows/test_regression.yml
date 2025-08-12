@@ -7,21 +7,27 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v3
+    - uses: actions/checkout@v3
 
-      - name: Install gcc
-        run: sudo apt-get install -y gcc libc6-dev
+    - uses: clonedSemicolon/setup-strace@v13
+    - name: Install gcc
+      run: sudo apt-get install -y gcc libc6-dev
 
-      - name: test DSDL generation and encode/decode
-        shell: bash
-        run: |
-          tests/test_regression.sh
+    - name: test DSDL generation and encode/decode
+      shell: bash
+      run: |
+        tests/test_regression.sh
 
-      - name: Archive generated headers
-        uses: actions/upload-artifact@v4
-        with:
-          name: dsdl_generated
-          path: |
-           dsdl_generated/include
-           dsdl_generated/src
-          retention-days: 90
+    - name: Archive generated headers
+      uses: actions/upload-artifact@v4
+      with:
+        name: dsdl_generated
+        path: |
+          dsdl_generated/include
+          dsdl_generated/src
+        retention-days: 90
+    - name: Upload strace artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: strace-logs-${{ github.job }}-${{ matrix.flavor || 'lint' }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index || 0 }}
+        path: /home/runner/strace_logs/
