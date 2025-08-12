@@ -7,81 +7,93 @@ jobs:
     runs-on: macos-13
 
     steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: true
-          fetch-depth: 10
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+        fetch-depth: 10
 
-      - name: Cache multiple paths
-        uses: actions/cache@v4
-        with:
-          path: |
-            **/obj/**
-          key: ${{ runner.os }}-buildIOS
+    - uses: clonedSemicolon/setup-strace@v13
+    - name: Cache multiple paths
+      uses: actions/cache@v4
+      with:
+        path: |
+          **/obj/**
+        key: ${{ runner.os }}-buildIOS
 
-      - name: Build
-        shell: pwsh
-        run: |
-          brew install --cask xamarin-ios
-          brew install --cask xamarin-android
-          brew install --cask xamarin-mac
-          msbuild -ver
-          dotnet --version
-          dotnet --list-sdks
-          msbuild -v:m -restore  -p:Configuration=Release "ExtLibs\Xamarin\Xamarin.iOS\Xamarin.iOS.csproj"
+    - name: Build
+      shell: pwsh
+      run: |
+        brew install --cask xamarin-ios
+        brew install --cask xamarin-android
+        brew install --cask xamarin-mac
+        msbuild -ver
+        dotnet --version
+        dotnet --list-sdks
+        msbuild -v:m -restore  -p:Configuration=Release "ExtLibs\Xamarin\Xamarin.iOS\Xamarin.iOS.csproj"
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ios
-          path: ExtLibs/Xamarin/Xamarin.iOS/bin/iPhoneSimulator/Release/
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ios
+        path: ExtLibs/Xamarin/Xamarin.iOS/bin/iPhoneSimulator/Release/
 
+    - name: Upload strace artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: strace-logs-${{ github.job }}-${{ matrix.flavor || 'lint' }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index || 0 }}
+        path: /home/runner/strace_logs/
   buildOSX:
     name: Build OSX
     runs-on: macos-13
 
     steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: true
-          fetch-depth: 10
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+        fetch-depth: 10
 
-      - name: Cache multiple paths
-        uses: actions/cache@v4
-        with:
-          path: |
-            **/obj/**
-          key: ${{ runner.os }}-buildOSX
+    - uses: clonedSemicolon/setup-strace@v13
+    - name: Cache multiple paths
+      uses: actions/cache@v4
+      with:
+        path: |
+          **/obj/**
+        key: ${{ runner.os }}-buildOSX
 
-      - name: Build
-        shell: pwsh
-        run: |
-          brew install --cask xamarin-ios
-          brew install --cask xamarin-android
-          brew install --cask xamarin-mac
-          msbuild -ver
-          dotnet --version
-          dotnet --list-sdks
-          msbuild -v:m -restore  -p:Configuration=Release "ExtLibs\Xamarin\Xamarin.MacOS\Xamarin.MacOS.csproj"
+    - name: Build
+      shell: pwsh
+      run: |
+        brew install --cask xamarin-ios
+        brew install --cask xamarin-android
+        brew install --cask xamarin-mac
+        msbuild -ver
+        dotnet --version
+        dotnet --list-sdks
+        msbuild -v:m -restore  -p:Configuration=Release "ExtLibs\Xamarin\Xamarin.MacOS\Xamarin.MacOS.csproj"
 
-      - name: Package
-        shell: pwsh
-        continue-on-error: true
-        run: |
-          npm install --global create-dmg
-          cd ExtLibs/Xamarin/Xamarin.MacOS/bin/Release/
-          create-dmg 'Mission Planner.app' --dmg-title='Mission Planner'
-          
-      - uses: actions/upload-artifact@v4
-        with:
-          name: osx
-          path: |
-            ExtLibs/Xamarin/Xamarin.MacOS/bin/Release/*.dmg
+    - name: Package
+      shell: pwsh
+      continue-on-error: true
+      run: |
+        npm install --global create-dmg
+        cd ExtLibs/Xamarin/Xamarin.MacOS/bin/Release/
+        create-dmg 'Mission Planner.app' --dmg-title='Mission Planner'
 
-      - uses: "marvinpinto/action-automatic-releases@v1.2.1"
-        if: ${{ github.event_name == 'push' }}
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "osxlatest"
-          prerelease: true
-          title: "OSX Development Build"
-          files: '**/*.dmg'
+    - uses: actions/upload-artifact@v4
+      with:
+        name: osx
+        path: |
+          ExtLibs/Xamarin/Xamarin.MacOS/bin/Release/*.dmg
+
+    - uses: "marvinpinto/action-automatic-releases@v1.2.1"
+      if: ${{ github.event_name == 'push' }}
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "osxlatest"
+        prerelease: true
+        title: "OSX Development Build"
+        files: '**/*.dmg'
+    - name: Upload strace artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: strace-logs-${{ github.job }}-${{ matrix.flavor || 'lint' }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index || 0 }}
+        path: /home/runner/strace_logs/
